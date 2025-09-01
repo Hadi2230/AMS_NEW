@@ -4,6 +4,8 @@
 require dirname(__DIR__) . '/bootstrap.php';
 
 use App\Core\Router;
+use App\Controllers\AuthController;
+use App\Controllers\AssetsController;
 
 $router = new Router();
 
@@ -17,9 +19,25 @@ $router->get('/', function () {
 // Assets (read-only list for now)
 $router->get('/assets', function () {
     require_auth();
-    $stmt = pdo()->query("SELECT a.*, at.display_name AS type_display_name FROM assets a JOIN asset_types at ON a.type_id = at.id ORDER BY a.created_at DESC LIMIT 200");
-    $assets = $stmt->fetchAll();
-    App\Core\View::render('assets/index', ['assets' => $assets]);
+    (new AssetsController())->index();
+});
+
+$router->get('/assets/create', function () {
+    require_auth();
+    (new AssetsController())->create();
+});
+
+$router->post('/assets/store', function () {
+    require_auth();
+    (new AssetsController())->store();
+});
+
+// Auth
+$router->get('/login', function () {
+    (new AuthController())->showLogin();
+});
+$router->post('/login', function () {
+    (new AuthController())->doLogin();
 });
 
 $router->dispatch();

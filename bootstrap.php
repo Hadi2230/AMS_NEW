@@ -43,6 +43,10 @@ if (session_status() === PHP_SESSION_NONE) {
 // Load Config and initialize shared services
 use App\Core\Config;
 use App\Core\Database;
+use App\Core\Dotenv;
+
+// Load .env if present
+Dotenv::load(__DIR__ . '/.env');
 
 Config::init([
     'DB_HOST' => getenv('DB_HOST') ?: 'localhost:3307',
@@ -57,6 +61,9 @@ Database::init([
     'username' => Config::get('DB_USER'),
     'password' => Config::get('DB_PASS')
 ]);
+
+// Include legacy config to run migrations and keep helper compatibility
+require_once __DIR__ . '/config.php';
 
 // Ensure baseline folders exist
 if (!is_dir(__DIR__ . '/uploads')) {
