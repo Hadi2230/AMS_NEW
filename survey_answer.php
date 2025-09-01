@@ -26,6 +26,18 @@ if ($manage && $is_admin) {
 $customer_phone = trim($_POST['customer_phone'] ?? '');
 $device_code    = trim($_POST['device_code'] ?? '');
 
+if ($survey_id <= 0) {
+    $_SESSION['error'] = 'لطفاً یک نظرسنجی معتبر انتخاب کنید.';
+    header('Location: survey.php?tab=answer');
+    exit();
+}
+
+if ($customer_phone === '' && $device_code === '') {
+    $_SESSION['error'] = 'لطفاً شماره مشتری یا شماره دستگاه را وارد کنید.';
+    header('Location: survey.php?survey_id=' . $survey_id . '&tab=answer');
+    exit();
+}
+
 // یافتن مشتری بر اساس phone
 $customer = null;
 if ($customer_phone !== '') {
@@ -37,10 +49,12 @@ if ($customer_phone !== '') {
 // یافتن دستگاه: اگر device_code پر بود
 $asset = null;
 if ($device_code !== '') {
-    // مدل ژنراتور یا سریال موتور برق (ساده: تلاش برای match با هر دو)
-    $st = $pdo->prepare("SELECT a.id, a.name, a.serial_number, a.model
+    // مدل ژنراتور یا سریال موتور برق بر اساس نوع
+    $st = $pdo->prepare("SELECT a.id, a.name, a.serial_number, a.model, at.name AS type_name
                          FROM assets a
-                         WHERE a.model = ? OR a.serial_number = ?");
+                         JOIN asset_types at ON at.id = a.type_id
+                         WHERE (at.name = 'generator' AND a.model = ?)
+                            OR (at.name = 'power_motor' AND a.serial_number = ?)");
     $st->execute([$device_code, $device_code]);
     $asset = $st->fetch();
 }
