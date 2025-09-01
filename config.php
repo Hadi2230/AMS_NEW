@@ -441,6 +441,34 @@ function migrateDatabaseSchema(PDO $pdo) {
         $addColumn('survey_questions', "ADD COLUMN answer_type ENUM('boolean','rating','text') NULL");
         $addColumn('survey_questions', "ADD COLUMN created_by_admin INT NULL");
 
+        // گروه‌بندی پاسخ‌ها: ایجاد جدول submission و ستون ارجاع
+        $pdo->exec("CREATE TABLE IF NOT EXISTS survey_submissions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            survey_id INT NOT NULL,
+            customer_id INT NULL,
+            asset_id INT NULL,
+            started_by INT NOT NULL,
+            status ENUM('in_progress','completed') DEFAULT 'in_progress',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_survey_id (survey_id),
+            INDEX idx_customer_id (customer_id),
+            INDEX idx_asset_id (asset_id),
+            INDEX idx_started_by (started_by),
+            FOREIGN KEY (survey_id) REFERENCES surveys(id) ON DELETE CASCADE,
+            FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
+            FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_persian_ci");
+
+        $addColumn('survey_responses', "ADD COLUMN submission_id INT NULL");
+        // افزودن کلید خارجی به صورت امن (اگر قبلاً اضافه نشده باشد)
+        try {
+            $pdo->exec("ALTER TABLE survey_responses ADD INDEX idx_submission_id (submission_id)");
+        } catch (Throwable $e) {}
+        try {
+            $pdo->exec("ALTER TABLE survey_responses ADD CONSTRAINT fk_survey_responses_submission FOREIGN KEY (submission_id) REFERENCES survey_submissions(id) ON DELETE CASCADE");
+        } catch (Throwable $e) {}
+
         // جدول یادداشت کاربران
         $pdo->exec("CREATE TABLE IF NOT EXISTS user_notes (
             id INT AUTO_INCREMENT PRIMARY KEY,
