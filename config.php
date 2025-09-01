@@ -420,6 +420,17 @@ function migrateDatabaseSchema(PDO $pdo) {
         $addColumn('assets', "ADD COLUMN engine_model VARCHAR(255) NULL");
         $addColumn('assets', "ADD COLUMN engine_serial VARCHAR(255) NULL");
 
+        // فیلدهای مرتبط با اقلام مصرفی/قطعات و تامین که در assets.php استفاده می‌شوند
+        $addColumn('assets', "ADD COLUMN part_description TEXT NULL");
+        $addColumn('assets', "ADD COLUMN part_serial VARCHAR(255) NULL");
+        $addColumn('assets', "ADD COLUMN part_register_date DATE NULL");
+        $addColumn('assets', "ADD COLUMN part_notes TEXT NULL");
+        $addColumn('assets', "ADD COLUMN supply_method VARCHAR(100) NULL");
+        $addColumn('assets', "ADD COLUMN location VARCHAR(255) NULL");
+        $addColumn('assets', "ADD COLUMN quantity INT DEFAULT 0");
+        $addColumn('assets', "ADD COLUMN supplier_name VARCHAR(255) NULL");
+        $addColumn('assets', "ADD COLUMN supplier_contact VARCHAR(255) NULL");
+
         // users: ایمیل
         $addColumn('users', "ADD COLUMN email VARCHAR(255) NULL");
 
