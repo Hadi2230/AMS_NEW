@@ -437,6 +437,10 @@ function migrateDatabaseSchema(PDO $pdo) {
         // assignment_details: وضعیت نصب
         $addColumn('assignment_details', "ADD COLUMN installation_status ENUM('نصب شده','در حال نصب','لغو شده') NULL");
 
+        // survey_questions: هم‌ترازی با کد survey.php
+        $addColumn('survey_questions', "ADD COLUMN answer_type ENUM('boolean','rating','text') NULL");
+        $addColumn('survey_questions', "ADD COLUMN created_by_admin INT NULL");
+
         // جدول یادداشت کاربران
         $pdo->exec("CREATE TABLE IF NOT EXISTS user_notes (
             id INT AUTO_INCREMENT PRIMARY KEY,

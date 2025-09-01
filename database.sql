@@ -220,9 +220,11 @@ CREATE TABLE IF NOT EXISTS surveys (
 
 CREATE TABLE IF NOT EXISTS survey_questions (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    survey_id INT NOT NULL,
+    survey_id INT NULL,
     question_text TEXT NOT NULL,
-    question_type ENUM('yes_no', 'rating', 'descriptive') NOT NULL,
+    -- هم‌تراز با کد: answer_type به جای question_type
+    answer_type ENUM('boolean', 'rating', 'text') NOT NULL DEFAULT 'text',
+    created_by_admin INT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (survey_id) REFERENCES surveys(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_persian_ci;
