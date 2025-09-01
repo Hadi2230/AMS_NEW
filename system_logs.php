@@ -24,7 +24,7 @@ body { font-family: Vazirmatn, sans-serif; padding: 20px; }
 table { font-size: 0.9rem; }
 </style>
 </head>
-<body>
+<body class="<?php echo isset($_COOKIE['theme']) && $_COOKIE['theme']==='dark' ? 'dark-mode' : ''; ?>">
 <div class="container">
 <h2 class="mb-4">لاگ‌های سیستم</h2>
 <table class="table table-bordered table-striped table-hover">

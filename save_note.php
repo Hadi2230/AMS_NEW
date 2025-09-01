@@ -2,6 +2,13 @@
 session_start();
 include 'config.php';
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: dashboard.php');
+    exit();
+}
+
+verifyCsrfToken();
+
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit();

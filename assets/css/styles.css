@@ -1,0 +1,56 @@
+/* Global styles for Aala Niroo AMS */
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #3498db;
+    --accent-color: #e74c3c;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --dark-bg: #1a1a1a;
+    --dark-surface: #2d3748;
+    --dark-text: #ffffff;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    font-family: Vazirmatn, Tahoma, sans-serif;
+    background-color: #f8f9fa;
+    color: #111827;
+}
+
+.dark-mode {
+    background-color: var(--dark-bg) !important;
+    color: var(--dark-text) !important;
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #34495e 100%);
+    color: #fff;
+    border-radius: 12px 12px 0 0 !important;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #34495e 100%);
+    border: none;
+}
+
+.table thead th {
+    background-color: #f1f5f9;
+    font-weight: 600;
+}
+
+.navbar-custom {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #34495e 100%);
+}
+
+.dark-mode .card { background-color: var(--dark-surface); }
+.dark-mode .list-group-item { background-color: #374151; border-color: #4b5563; color: var(--dark-text); }
+

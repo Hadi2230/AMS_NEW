@@ -37,6 +37,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$locked) {
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($user && password_verify($password, $user['password'])) {
+            // جلوگیری از Session Fixation
+            if (PHP_SESSION_ACTIVE === session_status()) {
+                session_regenerate_id(true);
+            }
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['role'] = $user['role'];
@@ -50,10 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$locked) {
                 error_log("Login update error: " . $e->getMessage());
             }
 
-            $success = "ورود موفقیت‌آمیز بود! در حال انتقال...";
-            echo "<script>
-                setTimeout(function(){ window.location.href='dashboard.php'; }, 1500);
-            </script>";
+            header('Location: dashboard.php');
+            exit();
         } else {
             $_SESSION['login_attempts']++;
             if ($_SESSION['login_attempts'] >= 5) {
@@ -78,6 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$locked) {
 <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/assets/css/styles.css">
 
 <style>
 :root {

@@ -140,7 +140,7 @@ $pdfTemplatePath = __DIR__ . '/assets/documents/Guaranty Certificate.pdf';
         }
     </style>
 </head>
-<body>
+<body class="<?php echo isset($_COOKIE['theme']) && $_COOKIE['theme']==='dark' ? 'dark-mode' : ''; ?>">
 <?php include 'navbar.php'; ?>
 
 <div class="container mt-5">

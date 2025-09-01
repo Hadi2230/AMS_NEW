@@ -7,9 +7,11 @@ if (!isset($_SESSION['user_id'])) {
 
 include 'config.php';
 
-// حذف دستگاه
-if (isset($_GET['delete_id']) && $_SESSION['role'] == 'ادمین') {
-    $delete_id = $_GET['delete_id'];
+// حذف دستگاه با روش امن: فقط POST + CSRF + نقش ادمین
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
+    checkPermission('ادمین');
+    verifyCsrfToken();
+    $delete_id = (int)$_POST['delete_id'];
     $stmt = $pdo->prepare("DELETE FROM assets WHERE id = ?");
     $stmt->execute([$delete_id]);
     $success = "دستگاه با موفقیت حذف شد!";
@@ -65,9 +67,9 @@ if (isset($_GET['success'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>گزارشات دستگاه‌ها - اعلا نیرو</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="/assets/css/styles.css">
 </head>
-<body>
+<body class="<?php echo isset($_COOKIE['theme']) && $_COOKIE['theme']==='dark' ? 'dark-mode' : ''; ?>">
     <?php include 'navbar.php'; ?>
 
     <div class="container mt-5">
@@ -120,8 +122,11 @@ if (isset($_GET['success'])) {
                                     </button>
                                     <a href="edit_asset.php?id=<?php echo $asset['id']; ?>" class="btn btn-sm btn-warning">ویرایش</a>
                                     <?php if ($_SESSION['role'] == 'ادمین'): ?>
-                                    <a href="reports.php?delete_id=<?php echo $asset['id']; ?>" class="btn btn-sm btn-danger" 
-                                       onclick="return confirm('آیا از حذف این دستگاه مطمئن هستید؟')">حذف</a>
+                                    <form method="POST" action="reports.php" style="display:inline" onsubmit="return confirm('آیا از حذف این دستگاه مطمئن هستید؟')">
+                                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
+                                        <input type="hidden" name="delete_id" value="<?php echo $asset['id']; ?>">
+                                        <button type="submit" class="btn btn-sm btn-danger">حذف</button>
+                                    </form>
                                     <?php endif; ?>
                                 </div>
                             </td>

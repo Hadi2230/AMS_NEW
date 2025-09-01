@@ -139,7 +139,7 @@ try {
         }
     </style>
 </head>
-<body>
+<body class="<?php echo isset($_COOKIE['theme']) && $_COOKIE['theme']==='dark' ? 'dark-mode' : ''; ?>">
     <?php 
     // بررسی وجود فایل navbar
     if (file_exists('navbar.php')) {
