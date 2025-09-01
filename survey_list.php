@@ -90,11 +90,12 @@ if ($submission_id > 0) {
                                     <td class="d-flex gap-1">
                                         <a class="btn btn-sm btn-outline-primary" href="survey_list.php?submission_id=<?php echo (int)$s['id']; ?>">مشاهده/چاپ</a>
                                         <?php if ($is_admin): ?>
-                                        <form method="post" action="survey.php" onsubmit="return confirm('حذف این ثبت؟');">
-                                            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-                                            <input type="hidden" name="submission_id" value="<?php echo (int)$s['id']; ?>">
-                                            <button class="btn btn-sm btn-outline-danger" name="delete_submission" type="submit">حذف</button>
-                                        </form>
+                                            <a class="btn btn-sm btn-outline-secondary" href="survey_edit.php?submission_id=<?php echo (int)$s['id']; ?>">ویرایش</a>
+                                            <form method="post" action="survey.php" onsubmit="return confirm('حذف این ثبت؟');">
+                                                <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+                                                <input type="hidden" name="submission_id" value="<?php echo (int)$s['id']; ?>">
+                                                <button class="btn btn-sm btn-outline-danger" name="delete_submission" type="submit">حذف</button>
+                                            </form>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
