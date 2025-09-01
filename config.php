@@ -572,7 +572,9 @@ function uploadFile($file, $target_dir, $allowed_types = ['jpg', 'jpeg', 'png', 
 // بررسی CSRF token
 function verifyCsrfToken() {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        $sessionToken = $_SESSION['csrf_token'] ?? '';
+        $requestToken = $_POST['csrf_token'] ?? '';
+        if (!$sessionToken || !$requestToken || !hash_equals($sessionToken, $requestToken)) {
             die('درخواست نامعتبر است - CSRF Token validation failed');
         }
     }

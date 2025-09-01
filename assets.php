@@ -143,34 +143,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_asset'])) {
     }
 }
 
-// حذف دارایی
-if (isset($_GET['delete_id'])) {
+// حذف دارایی - فقط از طریق POST + CSRF + نقش ادمین
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
     checkPermission('ادمین');
-    
-    $delete_id = (int)$_GET['delete_id'];
-    
+    verifyCsrfToken();
+    $delete_id = (int)$_POST['delete_id'];
     try {
-        // دریافت اطلاعات دارایی برای ثبت در لاگ
         $stmt = $pdo->prepare("SELECT name FROM assets WHERE id = ?");
         $stmt->execute([$delete_id]);
         $asset = $stmt->fetch();
-        
         if ($asset) {
             $stmt = $pdo->prepare("DELETE FROM assets WHERE id = ?");
             $stmt->execute([$delete_id]);
-            
             $_SESSION['success'] = "دارایی با موفقیت حذف شد!";
             logAction($pdo, 'DELETE_ASSET', "حذف دارایی: " . $asset['name'] . " (ID: $delete_id)");
         } else {
             $_SESSION['error'] = "دارایی مورد نظر یافت نشد!";
         }
-        
-        header('Location: assets.php');
-        exit();
     } catch (Exception $e) {
         $_SESSION['error'] = "خطا در حذف دارایی: " . $e->getMessage();
         logAction($pdo, 'DELETE_ASSET_ERROR', "خطا در حذف دارایی ID: $delete_id - " . $e->getMessage());
     }
+    header('Location: assets.php');
+    exit();
 }
 
 // دریافت انواع دارایی‌ها
@@ -229,6 +224,7 @@ $filtered_count = count($assets);
     <title>مدیریت دارایی‌ها - اعلا نیرو</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/assets/css/styles.css">
     <style>
         .card {
             border: none;
@@ -298,7 +294,7 @@ $filtered_count = count($assets);
         }
     </style>
 </head>
-<body>
+<body class="<?php echo isset($_COOKIE['theme']) && $_COOKIE['theme']==='dark' ? 'dark-mode' : ''; ?>">
     <?php include 'navbar.php'; ?>
 
     <div class="container-fluid mt-4">
@@ -1063,10 +1059,13 @@ $filtered_count = count($assets);
                                                     <i class="fas fa-edit"></i>
                                                 </a>
                                                 <?php if ($_SESSION['role'] == 'ادمین'): ?>
-                                                <a href="assets.php?delete_id=<?= $asset['id'] ?>" class="btn btn-sm btn-danger" title="حذف"
-                                                   onclick="return confirm('آیا از حذف این دارایی مطمئن هستید؟')">
-                                                    <i class="fas fa-trash"></i>
-                                                </a>
+                                                <form method="POST" action="assets.php" style="display:inline" onsubmit="return confirm('آیا از حذف این دارایی مطمئن هستید؟')">
+                                                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
+                                                    <input type="hidden" name="delete_id" value="<?= $asset['id'] ?>">
+                                                    <button type="submit" class="btn btn-sm btn-danger" title="حذف">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
                                                 <?php endif; ?>
                                             </td>
                                         </tr>

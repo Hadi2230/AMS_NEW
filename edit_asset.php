@@ -181,7 +181,7 @@ foreach ($types as $type) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ویرایش دستگاه - اعلا نیرو</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="/assets/css/styles.css">
     <style>
         .image-preview {
             max-width: 200px;
@@ -190,7 +190,7 @@ foreach ($types as $type) {
         }
     </style>
 </head>
-<body onload="loadFields(<?php echo $asset['type_id']; ?>)">
+<body class="<?php echo isset($_COOKIE['theme']) && $_COOKIE['theme']==='dark' ? 'dark-mode' : ''; ?>" onload="loadFields(<?php echo $asset['type_id']; ?>)">
     <?php include 'navbar.php'; ?>
 
     <div class="container mt-5">

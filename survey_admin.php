@@ -77,7 +77,7 @@ $surveys = $pdo->query("SELECT * FROM surveys ORDER BY created_at DESC")->fetchA
         }
     </style>
 </head>
-<body>
+<body class="<?php echo isset($_COOKIE['theme']) && $_COOKIE['theme']==='dark' ? 'dark-mode' : ''; ?>">
     <?php include 'navbar.php'; ?>
     
     <div class="container mt-4">

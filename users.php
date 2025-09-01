@@ -9,6 +9,7 @@ include 'config.php';
 
 // افزودن کاربر جدید
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_user'])) {
+    verifyCsrfToken();
     $username = trim($_POST['username']);
     $password = $_POST['password'];
     $role = $_POST['role'];
@@ -51,9 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_user'])) {
     }
 }
 
-// حذف کاربر
-if (isset($_GET['delete_id'])) {
-    $delete_id = $_GET['delete_id'];
+// حذف کاربر - فقط POST + CSRF
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
+    verifyCsrfToken();
+    $delete_id = (int)$_POST['delete_id'];
     
     // جلوگیری از حذف خود کاربر
     if ($delete_id != $_SESSION['user_id']) {
@@ -165,7 +167,7 @@ if (isset($_SESSION['error'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مدیریت کاربران - اعلا نیرو</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="/assets/css/styles.css">
     <style>
         .table-hover tbody tr:hover {
             background-color: rgba(52, 152, 219, 0.1);
@@ -181,7 +183,7 @@ if (isset($_SESSION['error'])) {
         }
     </style>
 </head>
-<body>
+<body class="<?php echo isset($_COOKIE['theme']) && $_COOKIE['theme']==='dark' ? 'dark-mode' : ''; ?>">
     <?php include 'navbar.php'; ?>
 
     <div class="container mt-4">
@@ -234,6 +236,7 @@ if (isset($_SESSION['error'])) {
             <div class="card-header">افزودن کاربر جدید</div>
             <div class="card-body">
                 <form method="POST" id="addUserForm">
+                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -333,12 +336,13 @@ if (isset($_SESSION['error'])) {
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                             <?php if ($user['id'] != $_SESSION['user_id']): ?>
-                                            <a href="users.php?delete_id=<?php echo $user['id']; ?>" 
-                                               class="btn btn-danger" 
-                                               title="حذف"
-                                               onclick="return confirm('آیا از حذف کاربر \"<?php echo addslashes($user['username']); ?>\" مطمئن هستید؟')">
-                                                <i class="fas fa-trash"></i>
-                                            </a>
+                                            <form method="POST" action="users.php" style="display:inline" onsubmit="return confirm('آیا از حذف کاربر \"<?php echo addslashes($user['username']); ?>\" مطمئن هستید؟')">
+                                                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
+                                                <input type="hidden" name="delete_id" value="<?php echo $user['id']; ?>">
+                                                <button type="submit" class="btn btn-danger" title="حذف">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
                                             <?php endif; ?>
                                         </div>
                                     </td>
