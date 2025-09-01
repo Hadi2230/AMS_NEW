@@ -92,9 +92,7 @@ if ($activeSurveyId === null && !empty($all_surveys)) {
                 <div class="card-body">
                     <p class="mb-2">افزودن سوال برای نظرسنجی انتخابی.</p>
                     <?php if ($is_admin): ?>
-                        <form method="post" action="survey_answer.php">
-                            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-                            <input type="hidden" name="manage" value="1">
+                        <form method="get" action="survey_admin.php">
                             <input type="hidden" name="survey_id" value="<?php echo (int)($activeSurveyId ?? 0); ?>">
                             <button class="btn btn-outline-secondary w-100" type="submit">افزودن/مدیریت سوالات</button>
                         </form>

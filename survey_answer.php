@@ -7,8 +7,11 @@ if (!isset($_SESSION['user_id'])) { header('Location: login.php'); exit(); }
 
 require_once __DIR__ . '/config.php';
 
-if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
-    die('درخواست نامعتبر است - CSRF Token validation failed');
+// CSRF فقط برای درخواست POST
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+    if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
+        die('درخواست نامعتبر است - CSRF Token validation failed');
+    }
 }
 
 $user_id = (int)$_SESSION['user_id'];
@@ -79,7 +82,13 @@ try {
 
 // دریافت سوالات
 $questions = [];
-$st = $pdo->prepare('SELECT id, question_text, answer_type FROM survey_questions WHERE survey_id = ? ORDER BY id');
+$st = $pdo->prepare('SELECT id, question_text, 
+                            COALESCE(answer_type,
+                                     CASE question_type 
+                                          WHEN "yes_no" THEN "boolean" 
+                                          WHEN "rating" THEN "rating" 
+                                          ELSE "text" END) AS answer_type
+                     FROM survey_questions WHERE survey_id = ? ORDER BY id');
 $st->execute([$survey_id]);
 $questions = $st->fetchAll();
 
