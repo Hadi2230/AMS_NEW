@@ -141,10 +141,17 @@ if (isset($_SESSION['last_assignment_id'])) {
     }
 }
 
-// دریافت لیست دستگاه‌های فعال از دیتابیس
+// دریافت لیست دستگاه‌ها (بدون محدودکردن به وضعیت 'فعال' برای سازگاری با داده‌های قدیمی)
 try {
-    $assets_stmt = $pdo->query("SELECT id, name, model, serial_number FROM assets WHERE status = 'فعال' ORDER BY name");
+    $assets_stmt = $pdo->query("SELECT id, name, model, serial_number FROM assets 
+                                 WHERE status = 'فعال' OR status IS NULL OR status IN ('Active','active','ACTIVE')
+                                 ORDER BY name");
     $assets = $assets_stmt->fetchAll(PDO::FETCH_ASSOC);
+    // اگر چیزی برنگشت، یک تلاش دوم بدون فیلتر وضعیت انجام بده
+    if (!$assets) {
+        $assets_stmt = $pdo->query("SELECT id, name, model, serial_number FROM assets ORDER BY name");
+        $assets = $assets_stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 } catch (Exception $e) {
     $error = "خطا در دریافت دستگاه‌ها: " . $e->getMessage();
     $assets = [];
