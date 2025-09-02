@@ -229,7 +229,18 @@ $filtered_count = count($assets);
     <title>مدیریت دارایی‌ها - اعلا نیرو</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
     <style>
+        html, body {
+            font-family: Vazirmatn, Tahoma, Arial, sans-serif;
+        }
+        .form-select, .form-control, .form-label, .btn, .card, option {
+            font-family: inherit;
+        }
+        /* اطمینان از راست‌چین بودن و هم‌تراز راست در فهرست‌ها */
+        .form-select, .form-control { direction: rtl; text-align: right; }
+        option { direction: rtl; text-align: right; }
+
         .card {
             border: none;
             border-radius: 10px;
