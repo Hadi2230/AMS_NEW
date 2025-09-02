@@ -6,8 +6,9 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// بررسی نقش کاربر
-$is_admin = isset($_SESSION['role']) && $_SESSION['role'] === 'ادمین';
+// بررسی نقش کاربر (سازگار با 'ادمین' فارسی و 'admin' انگلیسی)
+$role = isset($_SESSION['role']) ? trim((string)$_SESSION['role']) : '';
+$is_admin = ($role === 'ادمین' || strcasecmp($role, 'admin') === 0);
 $username = isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : 'کاربر';
 ?>
 
