@@ -7,6 +7,11 @@ if (!isset($_SESSION['user_id'])) {
 
 include 'config.php';
 
+// اطمینان از ارسال هدر UTF-8 برای جلوگیری از به‌هم‌ریختگی حروف
+if (!headers_sent()) {
+    header('Content-Type: text/html; charset=utf-8');
+}
+
 // ثبت لاگ
 logAction($pdo, 'VIEW_ASSETS', 'مشاهده صفحه مدیریت دارایی‌ها');
 
@@ -173,11 +178,26 @@ if (isset($_GET['delete_id'])) {
     }
 }
 
+// اطمینان از وجود انواع پیش‌فرض دارایی در دیتابیس
+try {
+    $defaults = [
+        ['generator',   'ژنراتور'],
+        ['power_motor', 'موتور برق'],
+        ['consumable',  'اقلام مصرفی'],
+        ['parts',       'قطعات']
+    ];
+    foreach ($defaults as [$name, $display]) {
+        $chk = $pdo->prepare('SELECT id FROM asset_types WHERE name = ? LIMIT 1');
+        $chk->execute([$name]);
+        if (!$chk->fetch()) {
+            $ins = $pdo->prepare('INSERT INTO asset_types (name, display_name) VALUES (?, ?)');
+            $ins->execute([$name, $display]);
+        }
+    }
+} catch (Throwable $e) {}
+
 // دریافت انواع دارایی‌ها
 $asset_types = $pdo->query("SELECT * FROM asset_types ORDER BY display_name")->fetchAll();
-
-// افزودن نوع دارایی "قطعات" به لیست
-$asset_types[] = ['id' => 5, 'name' => 'قطعات', 'display_name' => 'قطعات'];
 
 // جستجو و فیلتر
 $search = $_GET['search'] ?? '';
@@ -1143,15 +1163,23 @@ $filtered_count = count($assets);
     
     // نمایش مرحله بعد
     function nextStep(step) {
-        if (validateStep(currentStep)) {
-            document.getElementById('step' + currentStep).classList.remove('active');
-            document.getElementById('step' + step).classList.add('active');
-            currentStep = step;
-            
-            // اگر به مرحله 4 (پیش‌نمایش) رسیدیم، اطلاعات را نمایش دهیم
-            if (step === 4) {
-                generatePreview();
-            }
+        if (!validateStep(currentStep)) {
+            return;
+        }
+
+        // اگر نوع، ژنراتور یا موتور برق است، مرحله "نحوه تامین" را رد کن
+        let target = step;
+        const isConsumableOrParts = (assetType.includes('مصرفی') || assetType.includes('قطعات'));
+        if (currentStep === 2 && !isConsumableOrParts && step === 3) {
+            target = 4;
+        }
+
+        document.getElementById('step' + currentStep).classList.remove('active');
+        document.getElementById('step' + target).classList.add('active');
+        currentStep = target;
+
+        if (currentStep === 4) {
+            generatePreview();
         }
     }
     
