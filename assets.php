@@ -450,7 +450,9 @@ $filtered_count = count($assets);
                                             <select class="form-select" id="type_id" name="type_id" required onchange="showStep2()">
                                                 <option value="">-- انتخاب کنید --</option>
                                                 <?php foreach ($asset_types as $type): ?>
-                                                    <option value="<?= $type['id'] ?>"><?= $type['display_name'] ?></option>
+                                                    <option value="<?= $type['id'] ?>" data-type="<?= htmlspecialchars($type['name']) ?>">
+                                                        <?= $type['display_name'] ?>
+                                                    </option>
                                                 <?php endforeach; ?>
                                             </select>
                                         </div>
@@ -1335,23 +1337,24 @@ $filtered_count = count($assets);
     function showStep2() {
         const typeSelect = document.getElementById('type_id');
         const selectedOption = typeSelect.options[typeSelect.selectedIndex];
-        const typeName = selectedOption.text.toLowerCase();
-        assetType = typeName;
-        
+        const typeKey = (selectedOption.getAttribute('data-type') || '').toLowerCase();
+        const typeLabel = selectedOption.text.trim();
+        assetType = typeLabel.toLowerCase();
+
         // به روز رسانی عنوان مرحله 2
-        document.getElementById('step2-title').textContent = `اطلاعات ${selectedOption.text}`;
-        
+        document.getElementById('step2-title').textContent = `اطلاعات ${typeLabel}`;
+
         // مخفی کردن همه فیلدهای پویا
         hideAllDynamicFields();
-        
-        // نمایش فیلدهای مربوطه در مرحله 2
-        if (typeName.includes('ژنراتور')) {
+
+        // نمایش فیلدهای مربوطه با اتکا به کلید نوع (پایدارتر از متن نمایشی)
+        if (typeKey === 'generator') {
             document.getElementById('generator_fields').style.display = 'block';
-        } else if (typeName.includes('موتور برق')) {
+        } else if (typeKey === 'power_motor') {
             document.getElementById('motor_fields').style.display = 'block';
-        } else if (typeName.includes('مصرفی')) {
+        } else if (typeKey === 'consumable') {
             document.getElementById('consumable_fields').style.display = 'block';
-        } else if (typeName.includes('قطعات')) {
+        } else if (typeKey === 'parts') {
             document.getElementById('parts_fields').style.display = 'block';
         }
     }
