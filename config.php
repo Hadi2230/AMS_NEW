@@ -55,6 +55,11 @@ if (!isset($_SESSION['tables_created'])) {
     $_SESSION['tables_created'] = true;
 }
 
+// اجرای مهاجرت سبک به صورت ایمن در هر بار بارگذاری برای هم‌ترازی اسکیما
+if (function_exists('migrateDatabaseSchema')) {
+    migrateDatabaseSchema($pdo);
+}
+
 /**
  * ایجاد جداول دیتابیس
  */
@@ -430,6 +435,21 @@ function migrateDatabaseSchema(PDO $pdo) {
         $addColumn('assets', "ADD COLUMN quantity INT DEFAULT 0");
         $addColumn('assets', "ADD COLUMN supplier_name VARCHAR(255) NULL");
         $addColumn('assets', "ADD COLUMN supplier_contact VARCHAR(255) NULL");
+
+        // مدیریت موجودی انبار: ایجاد جدول و ستون های لازم
+        $pdo->exec("CREATE TABLE IF NOT EXISTS inventory_movements (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            asset_id INT NOT NULL,
+            delta INT NOT NULL,
+            reason VARCHAR(255) NULL,
+            created_by INT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_asset_id (asset_id),
+            FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_persian_ci");
+
+        // در صورت وجود جدول قدیمی بدون ستون delta، آن را اضافه کن
+        $addColumn('inventory_movements', "ADD COLUMN delta INT NOT NULL DEFAULT 0");
 
         // users: ایمیل
         $addColumn('users', "ADD COLUMN email VARCHAR(255) NULL");
