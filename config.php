@@ -607,6 +607,43 @@ function logAction($pdo, $action, $description = '') {
     $stmt->execute([$user_id, $action, $description, $ip_address, $user_agent]);
 }
 
+// توابع کمکی مورد نیاز در سایر بخش‌ها
+if (!function_exists('pdo')) {
+    function pdo(): PDO {
+        global $pdo;
+        return $pdo;
+    }
+}
+
+if (!function_exists('h')) {
+    function h($value): string {
+        return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if (!function_exists('csrf_field')) {
+    function csrf_field(): void {
+        $token = $_SESSION['csrf_token'] ?? '';
+        echo '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">';
+    }
+}
+
+if (!function_exists('clean')) {
+    function clean($data) {
+        return sanitizeInput($data);
+    }
+}
+
+if (!function_exists('log_action')) {
+    function log_action(string $action, string $description = ''): void {
+        try {
+            logAction(pdo(), $action, $description);
+        } catch (Throwable $e) {
+            // نادیده بگیر ولی در صورت نیاز می‌توان لاگ کرد
+        }
+    }
+}
+
 // آپلود فایل با اعتبارسنجی
 function uploadFile($file, $target_dir, $allowed_types = ['jpg', 'jpeg', 'png', 'gif', 'pdf']) {
     if ($file['error'] !== UPLOAD_ERR_OK) {
