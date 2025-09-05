@@ -450,6 +450,9 @@ function migrateDatabaseSchema(PDO $pdo) {
 
         // در صورت وجود جدول قدیمی بدون ستون delta، آن را اضافه کن
         $addColumn('inventory_movements', "ADD COLUMN delta INT NOT NULL DEFAULT 0");
+        $addColumn('inventory_movements', "ADD COLUMN created_by INT NULL");
+        $addColumn('inventory_movements', "ADD COLUMN reason VARCHAR(255) NULL");
+        $addColumn('inventory_movements', "ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP");
 
         // users: ایمیل
         $addColumn('users', "ADD COLUMN email VARCHAR(255) NULL");
