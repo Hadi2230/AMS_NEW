@@ -1068,7 +1068,7 @@ $filtered_count = count($assets);
                                 <table class="table table-striped table-hover">
                                     <thead>
                                         <tr>
-                                            <th>نام دستگاه</th>
+                                            <th>شناسه/نام دستگاه</th>
                                             <th>نوع</th>
                                             <th>سریال</th>
                                             <th>برند/مدل</th>
@@ -1080,7 +1080,7 @@ $filtered_count = count($assets);
                                     <tbody>
                                         <?php foreach ($assets as $asset): ?>
                                         <tr>
-                                            <td><?= htmlspecialchars($asset['name']) ?></td>
+                                            <td><?= htmlspecialchars(($asset['device_identifier'] ?? '') !== '' ? $asset['device_identifier'] : $asset['name']) ?></td>
                                             <td>
                                                 <span class="badge bg-secondary"><?= htmlspecialchars($asset['type_display_name']) ?></span>
                                             </td>
