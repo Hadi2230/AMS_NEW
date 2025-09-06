@@ -435,6 +435,8 @@ function migrateDatabaseSchema(PDO $pdo) {
         $addColumn('assets', "ADD COLUMN quantity INT DEFAULT 0");
         $addColumn('assets', "ADD COLUMN supplier_name VARCHAR(255) NULL");
         $addColumn('assets', "ADD COLUMN supplier_contact VARCHAR(255) NULL");
+        $addColumn('assets', "ADD COLUMN device_identifier VARCHAR(100) NULL");
+        try { $pdo->exec("CREATE INDEX idx_assets_device_identifier ON assets(device_identifier)"); } catch (Throwable $e) {}
 
         // مدیریت موجودی انبار: ایجاد جدول و ستون های لازم
         $pdo->exec("CREATE TABLE IF NOT EXISTS inventory_movements (

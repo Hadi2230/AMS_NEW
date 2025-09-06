@@ -87,10 +87,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_asset'])) {
         $supplier_name = sanitizeInput($_POST['supplier_name'] ?? '');
         $supplier_contact = sanitizeInput($_POST['supplier_contact'] ?? '');
         
+        // تولید شناسه دستگاه برای ژنراتورها (حرف اول نام + 4 کاراکتر اول سریال آلترناتور + 4 کاراکتر آخر سریال دستگاه/دستگاه)
+        $device_identifier = null;
+        if ($asset_type_name === 'generator') {
+            $firstChar = $name !== '' ? mb_substr($name, 0, 1) : '';
+            $altPart = $alternator_serial !== '' ? substr($alternator_serial, 0, 4) : '';
+            $serialForTail = $device_serial !== '' ? $device_serial : $serial_number;
+            $tailPart = $serialForTail !== '' ? substr($serialForTail, max(0, strlen($serialForTail) - 4)) : '';
+            $device_identifier = strtoupper($firstChar . $altPart . $tailPart);
+            if ($device_identifier === '') { $device_identifier = null; }
+        }
+
         // درج دارایی اصلی
         $stmt = $pdo->prepare("INSERT INTO assets (name, type_id, serial_number, purchase_date, status, brand, model, 
                               power_capacity, engine_type, consumable_type, engine_model, engine_serial, 
-                              alternator_model, alternator_serial, device_model, device_serial, control_panel_model, 
+                              alternator_model, alternator_serial, device_model, device_serial, device_identifier, control_panel_model, 
                               breaker_model, fuel_tank_specs, battery, battery_charger, heater, oil_capacity, 
                               radiator_capacity, antifreeze, other_items, workshop_entry_date, workshop_exit_date, 
                               datasheet_link, engine_manual_link, alternator_manual_link, control_panel_manual_link, 
@@ -102,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_asset'])) {
         $stmt->execute([
             $name, $type_id, $serial_number, $purchase_date, $status, $brand, $model,
             $power_capacity, $engine_type, $consumable_type, $engine_model, $engine_serial,
-            $alternator_model, $alternator_serial, $device_model, $device_serial, $control_panel_model,
+            $alternator_model, $alternator_serial, $device_model, $device_serial, $device_identifier, $control_panel_model,
             $breaker_model, $fuel_tank_specs, $battery, $battery_charger, $heater, $oil_capacity,
             $radiator_capacity, $antifreeze, $other_items, $workshop_entry_date, $workshop_exit_date,
             $datasheet_link, $engine_manual_link, $alternator_manual_link, $control_panel_manual_link,
@@ -212,8 +223,9 @@ $query = "SELECT a.*, at.display_name as type_display_name
 $params = [];
 
 if (!empty($search)) {
-    $query .= " AND (a.name LIKE ? OR a.serial_number LIKE ? OR a.model LIKE ? OR a.brand LIKE ?)";
+    $query .= " AND (a.device_identifier LIKE ? OR a.name LIKE ? OR a.serial_number LIKE ? OR a.model LIKE ? OR a.brand LIKE ?)";
     $search_term = "%$search%";
+    $params[] = $search_term;
     $params[] = $search_term;
     $params[] = $search_term;
     $params[] = $search_term;
