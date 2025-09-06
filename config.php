@@ -502,6 +502,23 @@ function migrateDatabaseSchema(PDO $pdo) {
             INDEX idx_user_id (user_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_persian_ci");
 
+        // مکاتبات دارایی‌ها
+        $pdo->exec("CREATE TABLE IF NOT EXISTS asset_correspondence (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            asset_id INT NOT NULL,
+            direction ENUM('ورودی','خروجی') NOT NULL,
+            letter_number VARCHAR(100) NULL,
+            letter_date VARCHAR(20) NULL,
+            subject VARCHAR(255) NULL,
+            file_path VARCHAR(500) NULL,
+            file_name VARCHAR(255) NULL,
+            notes TEXT NULL,
+            uploaded_by INT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_asset_id (asset_id),
+            FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_persian_ci");
+
         // سرویس و نگهداشت دستگاه‌ها
         $pdo->exec("CREATE TABLE IF NOT EXISTS asset_services (
             id INT AUTO_INCREMENT PRIMARY KEY,
