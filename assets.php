@@ -7,6 +7,11 @@ if (!isset($_SESSION['user_id'])) {
 
 include 'config.php';
 
+// اطمینان از ارسال هدر UTF-8 برای جلوگیری از به‌هم‌ریختگی حروف
+if (!headers_sent()) {
+    header('Content-Type: text/html; charset=utf-8');
+}
+
 // ثبت لاگ
 logAction($pdo, 'VIEW_ASSETS', 'مشاهده صفحه مدیریت دارایی‌ها');
 
@@ -82,10 +87,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_asset'])) {
         $supplier_name = sanitizeInput($_POST['supplier_name'] ?? '');
         $supplier_contact = sanitizeInput($_POST['supplier_contact'] ?? '');
         
+        // تولید شناسه دستگاه برای ژنراتورها (حرف اول نام + 4 کاراکتر اول سریال آلترناتور + 4 کاراکتر آخر سریال دستگاه/دستگاه)
+        $device_identifier = null;
+        if ($asset_type_name === 'generator') {
+            $firstChar = $name !== '' ? mb_substr($name, 0, 1) : '';
+            $altPart = $alternator_serial !== '' ? substr($alternator_serial, 0, 4) : '';
+            $serialForTail = $device_serial !== '' ? $device_serial : $serial_number;
+            $tailPart = $serialForTail !== '' ? substr($serialForTail, max(0, strlen($serialForTail) - 4)) : '';
+            $device_identifier = strtoupper($firstChar . $altPart . $tailPart);
+            if ($device_identifier === '') { $device_identifier = null; }
+        }
+
         // درج دارایی اصلی
         $stmt = $pdo->prepare("INSERT INTO assets (name, type_id, serial_number, purchase_date, status, brand, model, 
                               power_capacity, engine_type, consumable_type, engine_model, engine_serial, 
-                              alternator_model, alternator_serial, device_model, device_serial, control_panel_model, 
+                              alternator_model, alternator_serial, device_model, device_serial, device_identifier, control_panel_model, 
                               breaker_model, fuel_tank_specs, battery, battery_charger, heater, oil_capacity, 
                               radiator_capacity, antifreeze, other_items, workshop_entry_date, workshop_exit_date, 
                               datasheet_link, engine_manual_link, alternator_manual_link, control_panel_manual_link, 
@@ -97,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_asset'])) {
         $stmt->execute([
             $name, $type_id, $serial_number, $purchase_date, $status, $brand, $model,
             $power_capacity, $engine_type, $consumable_type, $engine_model, $engine_serial,
-            $alternator_model, $alternator_serial, $device_model, $device_serial, $control_panel_model,
+            $alternator_model, $alternator_serial, $device_model, $device_serial, $device_identifier, $control_panel_model,
             $breaker_model, $fuel_tank_specs, $battery, $battery_charger, $heater, $oil_capacity,
             $radiator_capacity, $antifreeze, $other_items, $workshop_entry_date, $workshop_exit_date,
             $datasheet_link, $engine_manual_link, $alternator_manual_link, $control_panel_manual_link,
@@ -173,11 +189,26 @@ if (isset($_GET['delete_id'])) {
     }
 }
 
+// اطمینان از وجود انواع پیش‌فرض دارایی در دیتابیس
+try {
+    $defaults = [
+        ['generator',   'ژنراتور'],
+        ['power_motor', 'موتور برق'],
+        ['consumable',  'اقلام مصرفی'],
+        ['parts',       'قطعات']
+    ];
+    foreach ($defaults as [$name, $display]) {
+        $chk = $pdo->prepare('SELECT id FROM asset_types WHERE name = ? LIMIT 1');
+        $chk->execute([$name]);
+        if (!$chk->fetch()) {
+            $ins = $pdo->prepare('INSERT INTO asset_types (name, display_name) VALUES (?, ?)');
+            $ins->execute([$name, $display]);
+        }
+    }
+} catch (Throwable $e) {}
+
 // دریافت انواع دارایی‌ها
 $asset_types = $pdo->query("SELECT * FROM asset_types ORDER BY display_name")->fetchAll();
-
-// افزودن نوع دارایی "قطعات" به لیست
-$asset_types[] = ['id' => 5, 'name' => 'قطعات', 'display_name' => 'قطعات'];
 
 // جستجو و فیلتر
 $search = $_GET['search'] ?? '';
@@ -192,8 +223,9 @@ $query = "SELECT a.*, at.display_name as type_display_name
 $params = [];
 
 if (!empty($search)) {
-    $query .= " AND (a.name LIKE ? OR a.serial_number LIKE ? OR a.model LIKE ? OR a.brand LIKE ?)";
+    $query .= " AND (a.device_identifier LIKE ? OR a.name LIKE ? OR a.serial_number LIKE ? OR a.model LIKE ? OR a.brand LIKE ?)";
     $search_term = "%$search%";
+    $params[] = $search_term;
     $params[] = $search_term;
     $params[] = $search_term;
     $params[] = $search_term;
@@ -229,7 +261,18 @@ $filtered_count = count($assets);
     <title>مدیریت دارایی‌ها - اعلا نیرو</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
     <style>
+        html, body {
+            font-family: Vazirmatn, Tahoma, Arial, sans-serif;
+        }
+        .form-select, .form-control, .form-label, .btn, .card, option {
+            font-family: inherit;
+        }
+        /* اطمینان از راست‌چین بودن و هم‌تراز راست در فهرست‌ها */
+        .form-select, .form-control { direction: rtl; text-align: right; }
+        option { direction: rtl; text-align: right; }
+
         .card {
             border: none;
             border-radius: 10px;
@@ -419,7 +462,9 @@ $filtered_count = count($assets);
                                             <select class="form-select" id="type_id" name="type_id" required onchange="showStep2()">
                                                 <option value="">-- انتخاب کنید --</option>
                                                 <?php foreach ($asset_types as $type): ?>
-                                                    <option value="<?= $type['id'] ?>"><?= $type['display_name'] ?></option>
+                                                    <option value="<?= $type['id'] ?>" data-type="<?= htmlspecialchars($type['name']) ?>">
+                                                        <?= $type['display_name'] ?>
+                                                    </option>
                                                 <?php endforeach; ?>
                                             </select>
                                         </div>
@@ -1023,7 +1068,7 @@ $filtered_count = count($assets);
                                 <table class="table table-striped table-hover">
                                     <thead>
                                         <tr>
-                                            <th>نام دستگاه</th>
+                                            <th>شناسه/نام دستگاه</th>
                                             <th>نوع</th>
                                             <th>سریال</th>
                                             <th>برند/مدل</th>
@@ -1035,7 +1080,7 @@ $filtered_count = count($assets);
                                     <tbody>
                                         <?php foreach ($assets as $asset): ?>
                                         <tr>
-                                            <td><?= htmlspecialchars($asset['name']) ?></td>
+                                            <td><?= htmlspecialchars(($asset['device_identifier'] ?? '') !== '' ? $asset['device_identifier'] : $asset['name']) ?></td>
                                             <td>
                                                 <span class="badge bg-secondary"><?= htmlspecialchars($asset['type_display_name']) ?></span>
                                             </td>
@@ -1132,15 +1177,23 @@ $filtered_count = count($assets);
     
     // نمایش مرحله بعد
     function nextStep(step) {
-        if (validateStep(currentStep)) {
-            document.getElementById('step' + currentStep).classList.remove('active');
-            document.getElementById('step' + step).classList.add('active');
-            currentStep = step;
-            
-            // اگر به مرحله 4 (پیش‌نمایش) رسیدیم، اطلاعات را نمایش دهیم
-            if (step === 4) {
-                generatePreview();
-            }
+        if (!validateStep(currentStep)) {
+            return;
+        }
+
+        // اگر نوع، ژنراتور یا موتور برق است، مرحله "نحوه تامین" را رد کن
+        let target = step;
+        const isConsumableOrParts = (assetType.includes('مصرفی') || assetType.includes('قطعات'));
+        if (currentStep === 2 && !isConsumableOrParts && step === 3) {
+            target = 4;
+        }
+
+        document.getElementById('step' + currentStep).classList.remove('active');
+        document.getElementById('step' + target).classList.add('active');
+        currentStep = target;
+
+        if (currentStep === 4) {
+            generatePreview();
         }
     }
     
@@ -1296,23 +1349,24 @@ $filtered_count = count($assets);
     function showStep2() {
         const typeSelect = document.getElementById('type_id');
         const selectedOption = typeSelect.options[typeSelect.selectedIndex];
-        const typeName = selectedOption.text.toLowerCase();
-        assetType = typeName;
-        
+        const typeKey = (selectedOption.getAttribute('data-type') || '').toLowerCase();
+        const typeLabel = selectedOption.text.trim();
+        assetType = typeLabel.toLowerCase();
+
         // به روز رسانی عنوان مرحله 2
-        document.getElementById('step2-title').textContent = `اطلاعات ${selectedOption.text}`;
-        
+        document.getElementById('step2-title').textContent = `اطلاعات ${typeLabel}`;
+
         // مخفی کردن همه فیلدهای پویا
         hideAllDynamicFields();
-        
-        // نمایش فیلدهای مربوطه در مرحله 2
-        if (typeName.includes('ژنراتور')) {
+
+        // نمایش فیلدهای مربوطه با اتکا به کلید نوع (پایدارتر از متن نمایشی)
+        if (typeKey === 'generator') {
             document.getElementById('generator_fields').style.display = 'block';
-        } else if (typeName.includes('موتور برق')) {
+        } else if (typeKey === 'power_motor') {
             document.getElementById('motor_fields').style.display = 'block';
-        } else if (typeName.includes('مصرفی')) {
+        } else if (typeKey === 'consumable') {
             document.getElementById('consumable_fields').style.display = 'block';
-        } else if (typeName.includes('قطعات')) {
+        } else if (typeKey === 'parts') {
             document.getElementById('parts_fields').style.display = 'block';
         }
     }

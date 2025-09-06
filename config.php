@@ -55,6 +55,11 @@ if (!isset($_SESSION['tables_created'])) {
     $_SESSION['tables_created'] = true;
 }
 
+// اجرای مهاجرت سبک به صورت ایمن در هر بار بارگذاری برای هم‌ترازی اسکیما
+if (function_exists('migrateDatabaseSchema')) {
+    migrateDatabaseSchema($pdo);
+}
+
 /**
  * ایجاد جداول دیتابیس
  */
@@ -420,11 +425,74 @@ function migrateDatabaseSchema(PDO $pdo) {
         $addColumn('assets', "ADD COLUMN engine_model VARCHAR(255) NULL");
         $addColumn('assets', "ADD COLUMN engine_serial VARCHAR(255) NULL");
 
+        // فیلدهای مرتبط با اقلام مصرفی/قطعات و تامین که در assets.php استفاده می‌شوند
+        $addColumn('assets', "ADD COLUMN part_description TEXT NULL");
+        $addColumn('assets', "ADD COLUMN part_serial VARCHAR(255) NULL");
+        $addColumn('assets', "ADD COLUMN part_register_date DATE NULL");
+        $addColumn('assets', "ADD COLUMN part_notes TEXT NULL");
+        $addColumn('assets', "ADD COLUMN supply_method VARCHAR(100) NULL");
+        $addColumn('assets', "ADD COLUMN location VARCHAR(255) NULL");
+        $addColumn('assets', "ADD COLUMN quantity INT DEFAULT 0");
+        $addColumn('assets', "ADD COLUMN supplier_name VARCHAR(255) NULL");
+        $addColumn('assets', "ADD COLUMN supplier_contact VARCHAR(255) NULL");
+        $addColumn('assets', "ADD COLUMN device_identifier VARCHAR(100) NULL");
+        try { $pdo->exec("CREATE INDEX idx_assets_device_identifier ON assets(device_identifier)"); } catch (Throwable $e) {}
+
+        // مدیریت موجودی انبار: ایجاد جدول و ستون های لازم
+        $pdo->exec("CREATE TABLE IF NOT EXISTS inventory_movements (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            asset_id INT NOT NULL,
+            delta INT NOT NULL,
+            reason VARCHAR(255) NULL,
+            created_by INT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_asset_id (asset_id),
+            FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_persian_ci");
+
+        // در صورت وجود جدول قدیمی بدون ستون delta، آن را اضافه کن
+        $addColumn('inventory_movements', "ADD COLUMN delta INT NOT NULL DEFAULT 0");
+        $addColumn('inventory_movements', "ADD COLUMN created_by INT NULL");
+        $addColumn('inventory_movements', "ADD COLUMN reason VARCHAR(255) NULL");
+        $addColumn('inventory_movements', "ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP");
+
         // users: ایمیل
         $addColumn('users', "ADD COLUMN email VARCHAR(255) NULL");
 
         // assignment_details: وضعیت نصب
         $addColumn('assignment_details', "ADD COLUMN installation_status ENUM('نصب شده','در حال نصب','لغو شده') NULL");
+
+        // survey_questions: هم‌ترازی با کد survey.php
+        $addColumn('survey_questions', "ADD COLUMN answer_type ENUM('boolean','rating','text') NULL");
+        $addColumn('survey_questions', "ADD COLUMN created_by_admin INT NULL");
+
+        // گروه‌بندی پاسخ‌ها: ایجاد جدول submission و ستون ارجاع
+        $pdo->exec("CREATE TABLE IF NOT EXISTS survey_submissions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            survey_id INT NOT NULL,
+            customer_id INT NULL,
+            asset_id INT NULL,
+            started_by INT NOT NULL,
+            status ENUM('in_progress','completed') DEFAULT 'in_progress',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_survey_id (survey_id),
+            INDEX idx_customer_id (customer_id),
+            INDEX idx_asset_id (asset_id),
+            INDEX idx_started_by (started_by),
+            FOREIGN KEY (survey_id) REFERENCES surveys(id) ON DELETE CASCADE,
+            FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
+            FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_persian_ci");
+
+        $addColumn('survey_responses', "ADD COLUMN submission_id INT NULL");
+        // افزودن کلید خارجی به صورت امن (اگر قبلاً اضافه نشده باشد)
+        try {
+            $pdo->exec("ALTER TABLE survey_responses ADD INDEX idx_submission_id (submission_id)");
+        } catch (Throwable $e) {}
+        try {
+            $pdo->exec("ALTER TABLE survey_responses ADD CONSTRAINT fk_survey_responses_submission FOREIGN KEY (submission_id) REFERENCES survey_submissions(id) ON DELETE CASCADE");
+        } catch (Throwable $e) {}
 
         // جدول یادداشت کاربران
         $pdo->exec("CREATE TABLE IF NOT EXISTS user_notes (
@@ -434,6 +502,23 @@ function migrateDatabaseSchema(PDO $pdo) {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX idx_user_id (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_persian_ci");
+
+        // مکاتبات دارایی‌ها
+        $pdo->exec("CREATE TABLE IF NOT EXISTS asset_correspondence (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            asset_id INT NOT NULL,
+            direction ENUM('ورودی','خروجی') NOT NULL,
+            letter_number VARCHAR(100) NULL,
+            letter_date VARCHAR(20) NULL,
+            subject VARCHAR(255) NULL,
+            file_path VARCHAR(500) NULL,
+            file_name VARCHAR(255) NULL,
+            notes TEXT NULL,
+            uploaded_by INT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_asset_id (asset_id),
+            FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_persian_ci");
 
         // سرویس و نگهداشت دستگاه‌ها
@@ -542,6 +627,43 @@ function logAction($pdo, $action, $description = '') {
     $stmt = $pdo->prepare("INSERT INTO system_logs (user_id, action, description, ip_address, user_agent) 
                           VALUES (?, ?, ?, ?, ?)");
     $stmt->execute([$user_id, $action, $description, $ip_address, $user_agent]);
+}
+
+// توابع کمکی مورد نیاز در سایر بخش‌ها
+if (!function_exists('pdo')) {
+    function pdo(): PDO {
+        global $pdo;
+        return $pdo;
+    }
+}
+
+if (!function_exists('h')) {
+    function h($value): string {
+        return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if (!function_exists('csrf_field')) {
+    function csrf_field(): void {
+        $token = $_SESSION['csrf_token'] ?? '';
+        echo '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">';
+    }
+}
+
+if (!function_exists('clean')) {
+    function clean($data) {
+        return sanitizeInput($data);
+    }
+}
+
+if (!function_exists('log_action')) {
+    function log_action(string $action, string $description = ''): void {
+        try {
+            logAction(pdo(), $action, $description);
+        } catch (Throwable $e) {
+            // نادیده بگیر ولی در صورت نیاز می‌توان لاگ کرد
+        }
+    }
 }
 
 // آپلود فایل با اعتبارسنجی

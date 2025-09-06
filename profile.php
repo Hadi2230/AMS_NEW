@@ -56,7 +56,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>پروفایل دستگاه #<?= $asset['id'] ?> - اعلا نیرو</title>
+    <title>پروفایل دستگاه <?= htmlspecialchars($asset['device_identifier'] ?? ('#'.$asset['id'])) ?> - اعلا نیرو</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
@@ -293,7 +293,7 @@ try {
         </div>
 
         <div class="d-flex justify-content-between align-items-center mb-3 no-print">
-            <h2><i class="fas fa-id-card"></i> پروفایل دستگاه #<?= $asset['id'] ?></h2>
+            <h2><i class="fas fa-id-card"></i> پروفایل دستگاه <?= htmlspecialchars($asset['device_identifier'] ?? ('#'.$asset['id'])) ?></h2>
             <button class="btn btn-primary" onclick="window.print()"><i class="fas fa-print"></i> چاپ</button>
         </div>
 
@@ -302,10 +302,11 @@ try {
                 <div class="card">
                     <div class="card-header">اطلاعات کلی</div>
                     <div class="card-body">
-                        <p><strong>نام:</strong> <?= htmlspecialchars($asset['name']) ?></p>
+                        <p><strong>نام/شناسه:</strong> <?= htmlspecialchars(($asset['device_identifier'] ?? '') !== '' ? $asset['device_identifier'] : $asset['name']) ?></p>
                         <p><strong>نوع:</strong> <?= htmlspecialchars($asset['type_name'] ?? '-') ?></p>
                         <p><strong>وضعیت:</strong> <?= htmlspecialchars($asset['status']) ?></p>
                         <p><strong>سریال:</strong> <?= htmlspecialchars($asset['serial_number'] ?? '-') ?></p>
+                        <p><strong>شناسه دستگاه:</strong> <?= htmlspecialchars($asset['device_identifier'] ?? '-') ?></p>
                         <p><strong>تاریخ خرید:</strong> <?= htmlspecialchars($asset['purchase_date'] ?? '-') ?></p>
                         <p><strong>برند/مدل:</strong> <?= htmlspecialchars(($asset['brand'] ?? '') . (($asset['model'] ?? '') ? ' / ' . $asset['model'] : '')) ?></p>
                     </div>
